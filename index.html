@@ -1,148 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>금액 리스트</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      padding: 0;
-      background-color: #f5f5f5;
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
+
+<script>
+  // Firebase 설정
+  const firebaseConfig = {
+  apiKey: "AIzaSyCH3vSrqGyazZ0n1Cs2QWFVCc1H1y7X6QI",
+  authDomain: "money-record-8b8b0.firebaseapp.com",
+  projectId: "money-record-8b8b0",
+  storageBucket: "money-record-8b8b0.firebasestorage.app",
+  messagingSenderId: "324461305541",
+  appId: "1:324461305541:web:b1f2f9ba8d8595efd49aac"
+  };
+
+  // Firebase 초기화
+  const app = firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  const amountInput = document.getElementById('amountInput');
+  const amountList = document.getElementById('amountList');
+  const addButton = document.getElementById('addButton');
+
+  amountInput.addEventListener('keypress', function (event) {
+    if (event.key === 'Enter') {
+      addAmount();
     }
+  });
 
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 20px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
+  addButton.addEventListener('click', addAmount);
 
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-
-    input[type="number"] {
-      width: calc(100% - 20px);
-      padding: 10px;
-      margin-bottom: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 16px;
-    }
-
-    button.add {
-      width: 100%;
-      padding: 10px;
-      background-color: #4caf50;
-      border: none;
-      color: white;
-      font-size: 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
-
-    button.add:hover {
-      background-color: #45a049;
-    }
-
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-
-    li {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #f9f9f9;
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-
-    .details {
-      font-size: 12px;
-      color: #555;
-      margin-left: 10px;
-    }
-
-    button {
-      background-color: #ff5c5c;
-      border: none;
-      padding: 5px 10px;
-      color: #fff;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    button:hover {
-      background-color: #e04c4c;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>금액 리스트</h1>
-    <input type="number" id="amountInput" placeholder="금액 입력 (PHP)" />
-    <button class="add" id="addButton">추가</button>
-    <ul id="amountList"></ul>
-  </div>
-
-  <script>
-    const amountInput = document.getElementById('amountInput');
-    const amountList = document.getElementById('amountList');
-    const addButton = document.getElementById('addButton');
-
-    amountInput.addEventListener('keypress', function (event) {
-      if (event.key === 'Enter') {
-        addAmount();
-      }
-    });
-
-    addButton.addEventListener('click', addAmount);
-
-    function addAmount() {
-      const amount = parseFloat(amountInput.value);
-      if (!isNaN(amount) && amount > 0) {
-        addAmountToList(amount);
-        amountInput.value = '';
-      } else {
-        alert('유효한 금액을 입력하세요!');
-      }
-    }
-
-    function addAmountToList(amount) {
-      const li = document.createElement('li');
-
+  function addAmount() {
+    const amount = parseFloat(amountInput.value);
+    if (!isNaN(amount) && amount > 0) {
       const date = new Date();
       const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
-      const amountText = document.createElement('span');
-      amountText.textContent = `${amount.toLocaleString()} PHP`;
-
-      const dateText = document.createElement('span');
-      dateText.classList.add('details');
-      dateText.textContent = `(${formattedDate})`;
-
-      const deleteButton = document.createElement('button');
-      deleteButton.textContent = '삭제';
-      deleteButton.addEventListener('click', function () {
-        li.remove();
+      // Firebase에 저장
+      const newEntryRef = database.ref('amounts').push();
+      newEntryRef.set({
+        amount: amount,
+        date: formattedDate
       });
 
-      li.appendChild(amountText);
-      li.appendChild(dateText);
-      li.appendChild(deleteButton);
-      amountList.appendChild(li);
+      addAmountToList(amount, formattedDate);
+      amountInput.value = '';
+    } else {
+      alert('유효한 금액을 입력하세요!');
     }
-  </script>
-</body>
-</html>
+  }
+
+  function addAmountToList(amount, date) {
+    const li = document.createElement('li');
+
+    const amountText = document.createElement('span');
+    amountText.textContent = `${amount.toLocaleString()} PHP`;
+
+    const dateText = document.createElement('span');
+    dateText.classList.add('details');
+    dateText.textContent = `(${date})`;
+
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = '삭제';
+    deleteButton.addEventListener('click', function () {
+      li.remove();
+    });
+
+    li.appendChild(amountText);
+    li.appendChild(dateText);
+    li.appendChild(deleteButton);
+    amountList.appendChild(li);
+  }
+</script>
