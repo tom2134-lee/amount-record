@@ -96,34 +96,23 @@
     <ul id="amountList"></ul>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
-
-    // Firebase 설정 정보
-    const firebaseConfig = {
-      apiKey: "AIzaSyCH3vSrqGyazZ0n1Cs2QWFVCc1H1y7X6QI",
-      authDomain: "money-record-8b8b0.firebaseapp.com",
-      projectId: "money-record-8b8b0",
-      storageBucket: "money-record-8b8b0.firebasestorage.app",
-      messagingSenderId: "324461305541",
-      appId: "1:324461305541:web:b1f2f9ba8d8595efd49aac"
-    };
-
-    // Firebase 초기화
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
+  <script>
     const amountInput = document.getElementById('amountInput');
     const amountList = document.getElementById('amountList');
     const addButton = document.getElementById('addButton');
 
+    // 로컬 스토리지에서 데이터 로드
+    window.addEventListener('load', function () {
+      const savedAmounts = JSON.parse(localStorage.getItem('amounts')) || [];
+      savedAmounts.forEach(item => addAmountToList(item.amount, item.date));
+    });
+
+    // 금액 추가 버튼 클릭 또는 Enter 입력 처리
     amountInput.addEventListener('keypress', function (event) {
       if (event.key === 'Enter') {
         addAmount();
       }
     });
-
     addButton.addEventListener('click', addAmount);
 
     function addAmount() {
@@ -132,14 +121,9 @@
         const date = new Date();
         const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
-        // Firebase에 저장
-        const newEntryRef = push(ref(database, 'amounts'));
-        set(newEntryRef, {
-          amount: amount,
-          date: formattedDate
-        });
-
         addAmountToList(amount, formattedDate);
+        saveToLocal(amount, formattedDate);
+
         amountInput.value = '';
       } else {
         alert('유효한 금액을 입력하세요!');
@@ -160,12 +144,25 @@
       deleteButton.textContent = '삭제';
       deleteButton.addEventListener('click', function () {
         li.remove();
+        removeFromLocal(amount, date);
       });
 
       li.appendChild(amountText);
       li.appendChild(dateText);
       li.appendChild(deleteButton);
       amountList.appendChild(li);
+    }
+
+    function saveToLocal(amount, date) {
+      const savedAmounts = JSON.parse(localStorage.getItem('amounts')) || [];
+      savedAmounts.push({ amount, date });
+      localStorage.setItem('amounts', JSON.stringify(savedAmounts));
+    }
+
+    function removeFromLocal(amount, date) {
+      let savedAmounts = JSON.parse(localStorage.getItem('amounts')) || [];
+      savedAmounts = savedAmounts.filter(item => !(item.amount === amount && item.date === date));
+      localStorage.setItem('amounts', JSON.stringify(savedAmounts));
     }
   </script>
 </body>
