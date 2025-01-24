@@ -96,23 +96,47 @@
     <ul id="amountList"></ul>
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+    // Firebase 설정 정보
+    const firebaseConfig = {
+      apiKey: "AIzaSyCH3vSrqGyazZ0n1Cs2QWFVCc1H1y7X6QI",
+      authDomain: "money-record-8b8b0.firebaseapp.com",
+      databaseURL: "https://money-record-8b8b0-default-rtdb.firebaseio.com/", // 수정된 부분
+      projectId: "money-record-8b8b0",
+      storageBucket: "money-record-8b8b0.appspot.com",
+      messagingSenderId: "324461305541",
+      appId: "1:324461305541:web:7888b279139554ebd49aac"
+    };
+
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
     const amountInput = document.getElementById('amountInput');
     const amountList = document.getElementById('amountList');
     const addButton = document.getElementById('addButton');
 
-    // 로컬 스토리지에서 데이터 로드
+    // Firebase에서 데이터 로드
     window.addEventListener('load', function () {
-      const savedAmounts = JSON.parse(localStorage.getItem('amounts')) || [];
-      savedAmounts.forEach(item => addAmountToList(item.amount, item.date));
+      const amountsRef = ref(database, 'amounts');
+      onValue(amountsRef, (snapshot) => {
+        amountList.innerHTML = ''; // 초기화
+        snapshot.forEach((childSnapshot) => {
+          const data = childSnapshot.val();
+          addAmountToList(data.amount, data.date, childSnapshot.key);
+        });
+      });
     });
 
-    // 금액 추가 버튼 클릭 또는 Enter 입력 처리
     amountInput.addEventListener('keypress', function (event) {
       if (event.key === 'Enter') {
         addAmount();
       }
     });
+
     addButton.addEventListener('click', addAmount);
 
     function addAmount() {
@@ -121,8 +145,18 @@
         const date = new Date();
         const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
-        addAmountToList(amount, formattedDate);
-        saveToLocal(amount, formattedDate);
+        // Firebase 경로 및 데이터 저장
+        const newEntryRef = push(ref(database, 'amounts'));
+        set(newEntryRef, {
+          amount: amount,
+          date: formattedDate
+        })
+          .then(() => {
+            console.log('데이터 저장 성공');
+          })
+          .catch((error) => {
+            console.error('데이터 저장 실패:', error);
+          });
 
         amountInput.value = '';
       } else {
@@ -130,7 +164,7 @@
       }
     }
 
-    function addAmountToList(amount, date) {
+    function addAmountToList(amount, date, key) {
       const li = document.createElement('li');
 
       const amountText = document.createElement('span');
@@ -144,25 +178,19 @@
       deleteButton.textContent = '삭제';
       deleteButton.addEventListener('click', function () {
         li.remove();
-        removeFromLocal(amount, date);
+        remove(ref(database, `amounts/${key}`))
+          .then(() => {
+            console.log('데이터 삭제 성공');
+          })
+          .catch((error) => {
+            console.error('데이터 삭제 실패:', error);
+          });
       });
 
       li.appendChild(amountText);
       li.appendChild(dateText);
       li.appendChild(deleteButton);
       amountList.appendChild(li);
-    }
-
-    function saveToLocal(amount, date) {
-      const savedAmounts = JSON.parse(localStorage.getItem('amounts')) || [];
-      savedAmounts.push({ amount, date });
-      localStorage.setItem('amounts', JSON.stringify(savedAmounts));
-    }
-
-    function removeFromLocal(amount, date) {
-      let savedAmounts = JSON.parse(localStorage.getItem('amounts')) || [];
-      savedAmounts = savedAmounts.filter(item => !(item.amount === amount && item.date === date));
-      localStorage.setItem('amounts', JSON.stringify(savedAmounts));
     }
   </script>
 </body>
