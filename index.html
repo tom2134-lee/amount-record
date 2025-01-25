@@ -73,6 +73,13 @@
       margin-left: 10px;
     }
 
+    .total {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+    }
+
     button {
       background-color: #ff5c5c;
       border: none;
@@ -94,6 +101,7 @@
     <input type="number" id="amountInput" placeholder="금액 입력 (PHP)" />
     <button class="add" id="addButton">추가</button>
     <ul id="amountList"></ul>
+    <div class="total" id="totalAmount">총합: 0 PHP</div>
   </div>
 
   <script type="module">
@@ -104,7 +112,7 @@
     const firebaseConfig = {
       apiKey: "AIzaSyCH3vSrqGyazZ0n1Cs2QWFVCc1H1y7X6QI",
       authDomain: "money-record-8b8b0.firebaseapp.com",
-      databaseURL: "https://money-record-8b8b0-default-rtdb.firebaseio.com/", // 수정된 부분
+      databaseURL: "https://money-record-8b8b0-default-rtdb.firebaseio.com/",
       projectId: "money-record-8b8b0",
       storageBucket: "money-record-8b8b0.appspot.com",
       messagingSenderId: "324461305541",
@@ -118,16 +126,22 @@
     const amountInput = document.getElementById('amountInput');
     const amountList = document.getElementById('amountList');
     const addButton = document.getElementById('addButton');
+    const totalAmount = document.getElementById('totalAmount');
+
+    let total = 0;
 
     // Firebase에서 데이터 로드
     window.addEventListener('load', function () {
       const amountsRef = ref(database, 'amounts');
       onValue(amountsRef, (snapshot) => {
         amountList.innerHTML = ''; // 초기화
+        total = 0;
         snapshot.forEach((childSnapshot) => {
           const data = childSnapshot.val();
+          total += data.amount;
           addAmountToList(data.amount, data.date, childSnapshot.key);
         });
+        updateTotal();
       });
     });
 
@@ -141,7 +155,7 @@
 
     function addAmount() {
       const amount = parseFloat(amountInput.value);
-      if (!isNaN(amount) && amount > 0) {
+      if (!isNaN(amount) && amount !== 0) {
         const date = new Date();
         const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
@@ -160,7 +174,7 @@
 
         amountInput.value = '';
       } else {
-        alert('유효한 금액을 입력하세요!');
+        alert('유효한 금액을 입력하세요! (0 제외)');
       }
     }
 
@@ -181,6 +195,8 @@
         remove(ref(database, `amounts/${key}`))
           .then(() => {
             console.log('데이터 삭제 성공');
+            total -= amount;
+            updateTotal();
           })
           .catch((error) => {
             console.error('데이터 삭제 실패:', error);
@@ -191,6 +207,10 @@
       li.appendChild(dateText);
       li.appendChild(deleteButton);
       amountList.appendChild(li);
+    }
+
+    function updateTotal() {
+      totalAmount.textContent = `총합: ${total.toLocaleString()} PHP`;
     }
   </script>
 </body>
